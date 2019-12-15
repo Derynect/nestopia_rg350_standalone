@@ -36,8 +36,7 @@
 
 using namespace Nes::Api;
 
-static int nst_quit = 0;
-
+static int nst_quit = 0; 
 extern Input::Controllers *cNstPads;
 extern nstpaths_t nstpaths;
 
@@ -47,6 +46,15 @@ extern void (*audio_deinit)();
 void nst_schedule_quit() {
 	nst_quit = 1;
 }
+
+#include <time.h>
+uint32_t getUs2()
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+}
+
 
 int main(int argc, char *argv[]) {
 	// This is the main function
@@ -73,11 +81,13 @@ int main(int argc, char *argv[]) {
 	nst_set_callbacks();
 	
 	// Initialize SDL
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) < 0) {
+	//if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) < 0) {
+	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+	//if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		fprintf(stderr, "Couldn't initialize SDL: %s\n", SDL_GetError());
 		return 1;
 	}
-	
+
 	// Detect Joysticks
 	nstsdl_input_joysticks_detect();
 	
@@ -115,7 +125,7 @@ int main(int argc, char *argv[]) {
 			nstsdl_video_set_cursor();
 		}
 	}
-	
+
 	// Start the main loop
 	SDL_Event event;
 	while (!nst_quit) {
@@ -127,22 +137,18 @@ int main(int argc, char *argv[]) {
 				case SDL_QUIT:
 					nst_quit = 1;
 					break;
-				
 				case SDL_KEYDOWN:
 				case SDL_KEYUP:
-				case SDL_JOYHATMOTION:
-				case SDL_JOYAXISMOTION:
-				case SDL_JOYBUTTONDOWN:
-				case SDL_JOYBUTTONUP:
-				case SDL_MOUSEBUTTONDOWN:
-				case SDL_MOUSEBUTTONUP:
 					nstsdl_input_process(cNstPads, event);
 					break;
 				default: break;
 			}	
 		}
 		
+		uint32_t t0 = getUs2();
 		nst_emuloop();
+		uint32_t t1 = getUs2();
+		printf("emu loop %u\n", t1-t0);
 	}
 	
 	// Remove the cartridge and shut down the NES
@@ -164,6 +170,9 @@ int main(int argc, char *argv[]) {
 	
 	// Write the config file
 	config_file_write(nstpaths.nstdir);
+	SDL_Quit();
+
+	printf("Exiting\n"); fflush(stdout);
 
 	return 0;
 }

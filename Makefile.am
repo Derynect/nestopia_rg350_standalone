@@ -21,7 +21,7 @@ nestopia_CPPFLAGS = \
 nestopia_LDADD = \
 	$(ZLIB_LIBS) \
 	$(LIBARCHIVE_LIBS) \
-	$(SDL2_LIBS) \
+	$(SDL_LIBS) \
 	$(LIBEPOXY_LIBS)
 
 if ENABLE_GUI

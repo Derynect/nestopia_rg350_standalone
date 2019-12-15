@@ -36,6 +36,8 @@
 #include "font.h"
 #include "png.h"
 
+#include <SDL/SDL_video.h>
+
 using namespace Nes::Api;
 
 static int overscan_offset, overscan_height;
@@ -53,136 +55,58 @@ extern void *custompalette;
 extern nstpaths_t nstpaths;
 extern Emulator emulator;
 
-// Shader sources
-const GLchar* vshader_src =
-	"#version 150 core\n"
-	"in vec2 position;"
-	"in vec2 texcoord;"
-	"out vec2 outcoord;"
-	"void main() {"
-	"	outcoord = texcoord;"
-	"	gl_Position = vec4(position, 0.0, 1.0);"
-	"}";
-
-const GLchar* fshader_src =
-	"#version 150 core\n"
-	"in vec2 outcoord;"
-	"out vec4 fragcolor;"
-	"uniform sampler2D nestex;"
-	"void main() {"
-	"	fragcolor = texture(nestex, outcoord);"
-	"}";
-
-GLuint vao;
-GLuint vbo;
-GLuint vshader;
-GLuint fshader;
-GLuint gl_shader_prog = 0;
-GLuint gl_texture_id = 0;
+extern SDL_Surface* screen;
+SDL_Surface* nes_screen = NULL; // 256x224
 
 void nst_ogl_init() {
-	// Initialize OpenGL
-	
-	float vertices[] = {
-		-1.0f, -1.0f,	// Vertex 1 (X, Y)
-		-1.0f, 1.0f,	// Vertex 2 (X, Y)
-		1.0f, -1.0f,	// Vertex 3 (X, Y)
-		1.0f, 1.0f,		// Vertex 4 (X, Y)
-		0.0, 1.0,		// Texture 1 (X, Y)
-		0.0, 0.0,		// Texture 2 (X, Y)
-		1.0, 1.0,		// Texture 3 (X, Y)
-		1.0, 0.0		// Texture 4 (X, Y)
-	};
-	
-	GLint status;
-	
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-	
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	
-	vshader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vshader, 1, &vshader_src, NULL);
-	glCompileShader(vshader);
-	
-	glGetShaderiv(vshader, GL_COMPILE_STATUS, &status);
-	if (status == GL_FALSE) { fprintf(stderr, "Failed to compile vertex shader\n"); }
-	
-	fshader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fshader, 1, &fshader_src, NULL);
-	glCompileShader(fshader);
-	
-	glGetShaderiv(fshader, GL_COMPILE_STATUS, &status);
-	if (status == GL_FALSE) { fprintf(stderr, "Failed to compile fragment shader\n"); }
-	
-	GLuint gl_shader_prog = glCreateProgram();
-	glAttachShader(gl_shader_prog, vshader);
-	glAttachShader(gl_shader_prog, fshader);
-	
-	glLinkProgram(gl_shader_prog);
-	
-	glValidateProgram(gl_shader_prog);
-	glGetProgramiv(gl_shader_prog, GL_LINK_STATUS, &status);
-	if (status == GL_FALSE) { fprintf(stderr, "Failed to link shader program\n"); }
-	
-	glUseProgram(gl_shader_prog);
-	
-	GLint posAttrib = glGetAttribLocation(gl_shader_prog, "position");
-	glEnableVertexAttribArray(posAttrib);
-	glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	
-	GLint texAttrib = glGetAttribLocation(gl_shader_prog, "texcoord");
-	glEnableVertexAttribArray(texAttrib);
-	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 0, (void*)(8 * sizeof(GLfloat)));
-	
-	glGenTextures(1, &gl_texture_id);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, gl_texture_id);
-	
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, conf.video_linear_filter ? GL_LINEAR : GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	
-	conf.video_fullscreen ? 
-	glViewport(screensize.w / 2.0f - rendersize.w / 2.0f, 0, rendersize.w, rendersize.h) :
-	glViewport(0, 0, rendersize.w, rendersize.h);
-	
-	glUniform1i(glGetUniformLocation(gl_shader_prog, "nestex"), 0);
+    uint32_t amask = 0x00000000;
+    uint32_t bmask = 0x0000ff00;
+    uint32_t gmask = 0x00ff0000;
+    uint32_t rmask = 0xff000000;
+
+    amask = 0x00000000;
+    bmask = 0x000000ff;
+    gmask = 0x0000ff00;
+    rmask = 0x00ff0000;
+
+	nes_screen = SDL_CreateRGBSurfaceFrom(videobuf, 256, 224, 32, 256*4, rmask, gmask, bmask, amask);
+	if(!nes_screen)
+		printf("Error in SDL_CreateRGBSurfaceFrom: %s\n", SDL_GetError());
+//	SDL_SetPalette(nes_screen, SDL_LOGPAL, (SDL_Color *)s_cpsdl, 0, 256);
 }
 
 void nst_ogl_deinit() {
-	// Deinitialize OpenGL
-	if (gl_texture_id) { glDeleteTextures(1, &gl_texture_id); }
-	if (gl_shader_prog) { glDeleteProgram(gl_shader_prog); }
-	if (vshader) { glDeleteShader(vshader); }
-	if (fshader) { glDeleteShader(fshader); }
-	if (vao) { glDeleteVertexArrays(1, &vao); }
-	if (vbo) { glDeleteBuffers(1, &vbo); }
+    if (nes_screen) {
+        SDL_FreeSurface(nes_screen);
+        nes_screen = NULL;
+    }
 }
 
+
 void nst_ogl_render() {
-	// Render the scene
-	glTexImage2D(GL_TEXTURE_2D,
-				0,
-				GL_RGBA,
-				basesize.w,
-				overscan_height,
-				0,
-				GL_BGRA,
-				GL_UNSIGNED_BYTE,
-		videobuf + overscan_offset);
-	
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    SDL_Rect dstrect;
+
+    dstrect.x = (screen->w - 256) / 2;
+    dstrect.y = (screen->h - 224) / 2;
+
+    SDL_BlitSurface(nes_screen, 0, screen, &dstrect);
 }
+
+long video_lock_screen(void*& ptr) {
+	if (SDL_MUSTLOCK(screen)) SDL_LockSurface(screen);
+	ptr = videobuf;
+	return basesize.w * 4;
+}
+
+void video_unlock_screen(void*) {
+	if (SDL_MUSTLOCK(screen)) SDL_UnlockSurface(screen);
+}
+
 
 void nst_video_refresh() {
 	// Refresh the video settings
 	
 	nst_ogl_deinit();
-	
 	nst_ogl_init();
 }
 
@@ -502,26 +426,6 @@ void video_set_dimensions() {
 	}
 }
 
-long video_lock_screen(void*& ptr) {
-	ptr = videobuf;
-	return basesize.w * 4;
-}
-
-void video_unlock_screen(void*) {
-	
-	int xscale = renderstate.width / Video::Output::WIDTH;;
-	int yscale = renderstate.height / Video::Output::HEIGHT;
-	
-	if (osdtext.drawtext) {
-		nst_video_text_draw(osdtext.textbuf, osdtext.xpos * xscale, osdtext.ypos * yscale, osdtext.bg);
-		osdtext.drawtext--;
-	}
-	
-	if (osdtext.drawtime) {
-		nst_video_text_draw(osdtext.timebuf, 208 * xscale, 218 * yscale, false);
-	}
-}
-
 void video_screenshot_flip(unsigned char *pixels, int width, int height, int bytes) {
 	// Flip the pixels
 	int rowsize = width * bytes;
@@ -538,28 +442,6 @@ void video_screenshot_flip(unsigned char *pixels, int width, int height, int byt
 }
 
 void video_screenshot(const char* filename) {
-	// Take a screenshot in .png format
-	unsigned char *pixels;
-	pixels = (unsigned char*)malloc(sizeof(unsigned char) * rendersize.w * rendersize.h * 4);
-	
-	// Read the pixels and flip them vertically
-	glReadPixels(0, 0, rendersize.w, rendersize.h, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-	video_screenshot_flip(pixels, rendersize.w, rendersize.h, 4);
-	
-	if (filename == NULL) {
-		// Set the filename
-		char sshotpath[512];
-		snprintf(sshotpath, sizeof(sshotpath), "%sscreenshots/%s-%ld-%d.png", nstpaths.nstdir, nstpaths.gamename, time(NULL), rand() % 899 + 100);
-		
-		// Save the file
-		lodepng_encode32_file(sshotpath, (const unsigned char*)pixels, rendersize.w, rendersize.h);
-		fprintf(stderr, "Screenshot: %s\n", sshotpath);
-	}
-	else {
-		lodepng_encode32_file(filename, (const unsigned char*)pixels, rendersize.w, rendersize.h);
-	}
-	
-	free(pixels);
 }
 
 void video_clear_buffer() {

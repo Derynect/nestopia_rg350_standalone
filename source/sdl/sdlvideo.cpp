@@ -20,139 +20,99 @@
  * 
  */
 
-#include <SDL.h>
+#include <SDL/SDL.h>
+#include <stdlib.h>
+//#include <SDL/SDL_video.h>
 
 // Nst Common
 #include "nstcommon.h"
 #include "config.h"
 #include "video.h"
 #include "input.h"
+#include <time.h>
 
 // Nst SDL
 #include "cursor.h"
 #include "sdlvideo.h"
 
-static SDL_GLContext glcontext;
-static SDL_Window *sdlwindow;
-
 extern nstpaths_t nstpaths;
 extern Emulator emulator;
 
+SDL_Surface *screen = NULL;
+
 void nstsdl_video_create() {
-	// Create the window
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	
-	Uint32 windowflags = SDL_WINDOW_SHOWN|SDL_WINDOW_OPENGL;
-	
-	dimensions_t rendersize = nst_video_get_dimensions_render();
-	
-	sdlwindow = SDL_CreateWindow(
-		NULL,								//    window title
-		SDL_WINDOWPOS_UNDEFINED,			//    initial x position
-		SDL_WINDOWPOS_UNDEFINED,			//    initial y position
-		rendersize.w,						//    width, in pixels
-		rendersize.h,						//    height, in pixels
-		windowflags);
-	
-	if(sdlwindow == NULL) {
-		fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
-	}
-	
-	glcontext = SDL_GL_CreateContext(sdlwindow);
-	SDL_GL_MakeCurrent(sdlwindow, glcontext);
-	SDL_GL_SetSwapInterval(conf.timing_vsync);
-	
-	if(glcontext == NULL) {
-		fprintf(stderr, "Could not create glcontext: %s\n", SDL_GetError());
-	}
-	
-	fprintf(stderr, "OpenGL: %s\n", glGetString(GL_VERSION));
-	
-	nst_video_set_dimensions_screen(nstsdl_video_get_dimensions());
-	
-	// Fullscreen the window after creation
-	if (conf.video_fullscreen) { nstsdl_video_toggle_fullscreen(); }
+    Uint32 flags = SDL_HWSURFACE | SDL_TRIPLEBUF;
+
+    screen = SDL_SetVideoMode(320, 240, 16, flags);
+
+    if (!screen) {
+        fprintf(stderr, "Error creating screen: %s\n", SDL_GetError());
+        exit(1);
+    }
 }
 
 void nstsdl_video_destroy() {
-	// Destroy the video window
-	SDL_DestroyWindow(sdlwindow);
+    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
 dimensions_t nstsdl_video_get_dimensions() {
-	// Return the dimensions of the current screen
-	dimensions_t scrsize;
-	SDL_DisplayMode displaymode;
-	int displayindex = SDL_GetWindowDisplayIndex(sdlwindow);
-	SDL_GetDesktopDisplayMode(displayindex, &displaymode);
-	scrsize.w = displaymode.w;
-	scrsize.h = displaymode.h;
-	return scrsize;
+    dimensions_t scrsize;
+    scrsize.w = 320;
+    scrsize.h = 240;
+    return scrsize;
+//	// Return the dimensions of the current screen
+//	dimensions_t scrsize;
+//	SDL_DisplayMode displaymode;
+//	int displayindex = SDL_GetWindowDisplayIndex(sdlwindow);
+//	SDL_GetDesktopDisplayMode(displayindex, &displaymode);
+//	scrsize.w = displaymode.w;
+//	scrsize.h = displaymode.h;
+//	return scrsize;
 }
 
 void nstsdl_video_resize() {
-	dimensions_t rendersize = nst_video_get_dimensions_render();
-	SDL_SetWindowSize(sdlwindow, rendersize.w, rendersize.h);
+//	dimensions_t rendersize = nst_video_get_dimensions_render();
+//	SDL_SetWindowSize(sdlwindow, rendersize.w, rendersize.h);
 }
 
 void nstsdl_video_set_cursor() {
-	// Set the cursor to what it needs to be
-	if (nst_input_zapper_present()) {
-		if (conf.misc_disable_cursor_special) {
-			SDL_ShowCursor(false);
-		}
-		else {
-			SDL_ShowCursor(true); // Must be set true before being modified if special
-			cursor_set_special(Input::ZAPPER);
-		}
-	}
-	else {
-		if (conf.misc_disable_cursor || conf.video_fullscreen) { SDL_ShowCursor(false); }
-		else { SDL_ShowCursor(true); }
-	}
+    SDL_ShowCursor(0);
 }
 
 void nstsdl_video_set_title(const char *title) {
-	// Set the window title
-	SDL_SetWindowTitle(sdlwindow, title);
 }
 
+uint32_t getUs()
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+}
+
+uint32_t lastNs = 0;
 void nstsdl_video_swapbuffers() {
-	// Swap Buffers
-	SDL_GL_SwapWindow(sdlwindow);
+    SDL_Flip(screen);
+#if 0
+    uint32_t curNs = getUs();
+    if (lastNs != 0)
+        printf("%u\n", abs(curNs - lastNs));
+    lastNs = curNs;
+#endif
 }
 
 void nstsdl_video_toggle_fullscreen() {
-	
-	video_toggle_fullscreen();
-	
-	Uint32 flags;
-	if (conf.video_fullscreen) { flags = SDL_WINDOW_FULLSCREEN_DESKTOP; }
-	else { flags = 0; }
-	
-	SDL_SetWindowFullscreen(sdlwindow, flags);
-	
-	nstsdl_video_set_cursor();
-	
-	nst_video_set_dimensions_screen(nstsdl_video_get_dimensions());
-	
-	video_init();
-	
-	nstsdl_video_resize();
 }
 
 void nstsdl_video_toggle_filter() {
-	video_toggle_filter();
-	nst_video_set_dimensions_screen(nstsdl_video_get_dimensions());
-	video_init();
-	nstsdl_video_resize();
+//	video_toggle_filter();
+//	nst_video_set_dimensions_screen(nstsdl_video_get_dimensions());
+//	video_init();
+//	nstsdl_video_resize();
 }
 
 void nstsdl_video_toggle_scale() {
-	video_toggle_scalefactor();
-	nst_video_set_dimensions_screen(nstsdl_video_get_dimensions());
-	video_init();
-	nstsdl_video_resize();
+//	video_toggle_scalefactor();
+//	nst_video_set_dimensions_screen(nstsdl_video_get_dimensions());
+//	video_init();
+//	nstsdl_video_resize();
 }

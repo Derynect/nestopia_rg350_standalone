@@ -10,7 +10,6 @@
 
 #define VIDBUF_MAXSIZE 31457280
 
-#include <epoxy/gl.h>
 #ifdef _APPLE
 #include <OpenGL/gl.h>
 #endif

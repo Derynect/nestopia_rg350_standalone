@@ -6,6 +6,9 @@ AC_INIT(
 AC_CONFIG_SRCDIR([source])
 AC_LANG([C++])
 
+CXX=/opt/gcw0-toolchain/usr/bin/mipsel-gcw0-linux-uclibc-g++
+
+
 
 
 dnl ========================================================================
@@ -70,14 +73,8 @@ dnl ======================
 dnl zlib
 PKG_CHECK_MODULES([ZLIB], [zlib])
 
-dnl libarchive
-PKG_CHECK_MODULES([LIBARCHIVE], [libarchive])
-
-dnl SDL2
-PKG_CHECK_MODULES([SDL2], [sdl2])
-
-dnl LibEpoxy
-PKG_CHECK_MODULES([LIBEPOXY], [epoxy])
+dnl SDL
+PKG_CHECK_MODULES([SDL], [sdl])
 
 dnl libao
 AC_ARG_WITH([ao],
@@ -127,7 +124,8 @@ dnl ========
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 
-
+CXXFLAGS+=" -O3 -mips32r2 -fomit-frame-pointer -fno-builtin -fdata-sections -fno-common -fno-PIC -ffast-math -g"
+LDFLAGS+=" -flto"
 
 dnl ============================
 dnl Report configuration to user

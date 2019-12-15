@@ -6,6 +6,7 @@
 
 #include "core/api/NstApiInput.hpp"
 
+#if 0
 typedef struct {
 	SDL_Scancode u;
 	SDL_Scancode d;
@@ -56,6 +57,7 @@ typedef struct {
 	SDL_Scancode filter;
 	SDL_Scancode scalefactor;
 } uiinput_t;
+#endif
 
 typedef struct {
 	// User Interface
@@ -149,8 +151,5 @@ void nstsdl_input_match_joystick(Input::Controllers *controllers, SDL_Event even
 int nstsdl_input_checksign(int axisvalue);
 
 void nstsdl_input_process(Input::Controllers *controllers, SDL_Event event);
-
-char* nstsdl_input_translate_event(SDL_Event event);
-SDL_Event nstsdl_input_translate_string(const char *string);
 
 #endif

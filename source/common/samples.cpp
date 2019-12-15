@@ -25,11 +25,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#ifndef _MINGW
-#include <archive.h>
-#include <archive_entry.h>
-#endif
-
 #include "nstcommon.h"
 #include "samples.h"
 
@@ -63,40 +58,6 @@ int nst_sample_load_file(const char* filepath) {
 }
 
 int nst_sample_load_archive(const char* filename, const char* reqfile) {
-#ifndef _MINGW
-	struct archive *a;
-	struct archive_entry *entry;
-	int r;
-	int64_t entrysize;
-	
-	a = archive_read_new();
-	archive_read_support_filter_all(a);
-	archive_read_support_format_all(a);
-	r = archive_read_open_filename(a, filename, 10240);
-	
-	// Test if it's actually an archive
-	if (r != ARCHIVE_OK) {
-		r = archive_read_free(a);
-		return 0;
-	}
-	
-	// Scan through the archive for files
-	while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
-		const char *currentfile = archive_entry_pathname(entry);
-		int len = strlen(currentfile);
-		if ((!strcasecmp(&currentfile[len-4], ".wav"))) {
-			// Load the specified file
-			if (!strcmp(currentfile, reqfile)) {
-				entrysize = archive_entry_size(entry);
-				wavfile = (uint8_t*)malloc(entrysize);
-				archive_read_data(a, wavfile, entrysize);
-				archive_read_data_skip(a);
-				r = archive_read_free(a);
-				return 1;
-			}
-		}
-	}
-#endif
 	return 0;
 }
 

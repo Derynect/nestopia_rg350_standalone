@@ -38,10 +38,6 @@
 #ifdef _MINGW
 #include <io.h>
 #endif
-#ifndef _MINGW
-#include <archive.h>
-#include <archive_entry.h>
-#endif
 
 // Nst Common
 #include "nstcommon.h"
@@ -232,96 +228,11 @@ bool nst_archive_checkext(const char *filename) {
 
 bool nst_archive_select_file(const char *filename, char *reqfile, size_t reqsize) {
 	// Select a filename to pull out of the archive
-#ifndef _MINGW
-	struct archive *a;
-	struct archive_entry *entry;
-	int r, numarchives = 0;
-	
-	a = archive_read_new();
-	archive_read_support_filter_all(a);
-	archive_read_support_format_all(a);
-	r = archive_read_open_filename(a, filename, 10240);
-	
-	// Test if it's actually an archive
-	if (r != ARCHIVE_OK) {
-		r = archive_read_free(a);
-		return false;
-	}
-	// If it is an archive, handle it
-	else {
-		// Find files with valid extensions within the archive
-		while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
-			const char *currentfile = archive_entry_pathname(entry);
-			if (nst_archive_checkext(currentfile)) {
-				numarchives++;
-				snprintf(reqfile, reqsize, "%s", currentfile);
-			}
-			archive_read_data_skip(a);
-			break; // Load the first one found
-		}
-		// Free the archive
-		r = archive_read_free(a);
-		
-		// If there are no valid files in the archive, return
-		if (numarchives == 0) {	return false; }
-		else { return true; }
-	}
-#endif
 	return false;
 }
 
 bool nst_archive_open(const char *filename, char **rom, int *romsize, const char *reqfile) {
 	// Opens archives
-#ifndef _MINGW
-	struct archive *a;
-	struct archive_entry *entry;
-	int r;
-	int64_t entrysize;
-	
-	a = archive_read_new();
-	archive_read_support_filter_all(a);
-	archive_read_support_format_all(a);
-	r = archive_read_open_filename(a, filename, 10240);
-	
-	// Test if it's actually an archive
-	if (r != ARCHIVE_OK) {
-		r = archive_read_free(a);
-		return false;
-	}
-	
-	// Scan through the archive for files
-	while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
-		char *rombuf;
-		const char *currentfile = archive_entry_pathname(entry);
-		if (nst_archive_checkext(currentfile)) {
-			nst_set_paths(currentfile);
-			// If there's a specific file we want, load it
-			if (reqfile != NULL) {
-				if (!strcmp(currentfile, reqfile)) {
-					entrysize = archive_entry_size(entry);
-					rombuf = (char*)malloc(entrysize);
-					archive_read_data(a, rombuf, entrysize);
-					archive_read_data_skip(a);
-					r = archive_read_free(a);
-					*romsize = entrysize;
-					*rom = rombuf;
-					return true;
-				}
-			}
-			// Otherwise just take the first file in the archive
-			else {
-				entrysize = archive_entry_size(entry);
-				rombuf = (char*)malloc(entrysize);
-				archive_read_data(a, rombuf, entrysize);
-				archive_read_data_skip(a);
-				r = archive_read_free(a);
-				*romsize = entrysize;
-				*rom = rombuf;
-				return true;
-			}
-		}
-	}
-#endif
 	return false;
 }
 
