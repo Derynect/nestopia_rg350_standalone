@@ -71,11 +71,9 @@ extern Emulator emulator;
 extern nstpaths_t nstpaths;
 
 void nstsdl_input_joysticks_detect() {
-    printf("%s\n", __func__);
 }
 
 void nstsdl_input_joysticks_close() {
-    printf("%s\n", __func__);
 }
 
 #define DINGOO_UP SDLK_g
@@ -158,37 +156,29 @@ void nstsdl_input_match_keyboard(Input::Controllers *controllers, SDL_Event even
 }
 
 void nstsdl_input_match_mouse(Input::Controllers *controllers, SDL_Event event) {
-    printf("%s\n", __func__);
 }
 
 int nstsdl_input_checksign(int axisvalue) {
-    printf("%s\n", __func__);
     return 0;
 }
 
 void nstsdl_input_match_joystick(Input::Controllers *controllers, SDL_Event event) {
-    printf("%s\n", __func__);
 }
 
 void nstsdl_input_conf_defaults() {
-    printf("%s\n", __func__);
 }
 
 void nstsdl_input_conf_set(SDL_Event event, int type, int pnum, int counter) {
-    printf("%s\n", __func__);
 }
 
 static int nstsdl_input_config_match(void* user, const char* section, const char* name, const char* value) {
-    printf("%s\n", __func__);
     return 0;
 }
 
 void nstsdl_input_conf_read() {
-    printf("%s\n", __func__);
 }
 
 void nstsdl_input_conf_write() {
-    printf("%s\n", __func__);
 }
 
 void nstsdl_input_process(Input::Controllers *controllers, SDL_Event event) {
@@ -204,9 +194,7 @@ void nstsdl_input_process(Input::Controllers *controllers, SDL_Event event) {
 }
 
 void nstsdl_input_conf(int type, int pnum) {
-    printf("%s\n", __func__);
 }
 
 void nstsdl_input_conf_button(int pnum, int bnum) {
-    printf("%s\n", __func__);
 }
