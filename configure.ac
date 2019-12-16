@@ -54,13 +54,13 @@ dnl Set CXXFLAGS, CPPFLAGS and LDFLAGS
 dnl ==================================
 AS_IF([test "x${enable_flags_setting}" = "xyes" && test "x${enable_debug}" = "xno"],
 	[
-	AX_APPEND_COMPILE_FLAGS([${cxxflags_test} -Wno-narrowing], [CXXFLAGS])
+	AX_APPEND_COMPILE_FLAGS([${cxxflags_test} -Wno-narrowing -O3 -mips32r2 -fomit-frame-pointer -fno-builtin -fdata-sections -fno-common -fno-PIC -ffast-math -g -DDINGUX], [CXXFLAGS])
 	CXXFLAGS=$( echo ${CXXFLAGS} | $SED -e 's/^ *//' -e 's/ *$//' )
 	
 	AX_APPEND_COMPILE_FLAGS([${cppflags_test}], [CPPFLAGS])
 	CPPFLAGS=$( echo ${CPPFLAGS} | $SED -e 's/^ *//' -e 's/ *$//' )
 	
-	AX_APPEND_LINK_FLAGS([${ldflags_test}], [LDFLAGS])
+	AX_APPEND_LINK_FLAGS([${ldflags_test} -flto], [LDFLAGS])
 	LDFLAGS=$( echo ${LDFLAGS} | $SED -e 's/^ *//' -e 's/ *$//' )
 	]
 )
@@ -124,8 +124,7 @@ dnl ========
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 
-CXXFLAGS+=" -O3 -mips32r2 -fomit-frame-pointer -fno-builtin -fdata-sections -fno-common -fno-PIC -ffast-math -g -DDINGUX"
-LDFLAGS+=" -flto"
+#LDFLAGS+=" -flto"
 
 dnl ============================
 dnl Report configuration to user

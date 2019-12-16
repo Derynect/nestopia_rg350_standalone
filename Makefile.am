@@ -24,6 +24,8 @@ nestopia_LDADD = \
 	$(SDL_LIBS) \
 	$(LIBEPOXY_LIBS)
 
+AM_CXXFLAGS = -fpic
+
 if ENABLE_GUI
 nestopia_CPPFLAGS += -D_GTK $(GTK3_CFLAGS)
 nestopia_LDADD += $(GTK3_LIBS)
