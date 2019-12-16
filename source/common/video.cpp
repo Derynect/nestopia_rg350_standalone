@@ -42,7 +42,12 @@ using namespace Nes::Api;
 
 static int overscan_offset, overscan_height;
 
+#undef VID
+#ifndef VID
 static uint32_t videobuf[VIDBUF_MAXSIZE]; // Maximum possible internal size
+#else
+uint32_t* videobuf;
+#endif
 
 static Video::RenderState::Filter filter;
 static Video::RenderState renderstate;
@@ -58,6 +63,7 @@ extern Emulator emulator;
 extern SDL_Surface* screen;
 SDL_Surface* nes_screen = NULL; // 256x224
 
+
 void nst_ogl_init() {
     uint32_t amask = 0x00000000;
     uint32_t bmask = 0x0000ff00;
@@ -69,9 +75,14 @@ void nst_ogl_init() {
     gmask = 0x0000ff00;
     rmask = 0x00ff0000;
 
+#ifdef VID
+    videobuf = (uint32_t*)(screen->pixels;
+#else
 	nes_screen = SDL_CreateRGBSurfaceFrom(videobuf, 256, 224, 32, 256*4, rmask, gmask, bmask, amask);
 	if(!nes_screen)
 		printf("Error in SDL_CreateRGBSurfaceFrom: %s\n", SDL_GetError());
+#endif
+
 //	SDL_SetPalette(nes_screen, SDL_LOGPAL, (SDL_Color *)s_cpsdl, 0, 256);
 }
 
@@ -84,12 +95,21 @@ void nst_ogl_deinit() {
 
 
 void nst_ogl_render() {
+#ifndef VID
     SDL_Rect dstrect;
 
     dstrect.x = (screen->w - 256) / 2;
     dstrect.y = (screen->h - 224) / 2;
 
+#if 0
+    uint32_t t0 = getUs();
+#endif
     SDL_BlitSurface(nes_screen, 0, screen, &dstrect);
+#if 0
+    uint32_t t1 = getUs();
+    printf("blit %u\n", t1-t0);
+#endif
+#endif
 }
 
 long video_lock_screen(void*& ptr) {

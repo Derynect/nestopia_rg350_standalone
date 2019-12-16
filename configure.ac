@@ -6,7 +6,7 @@ AC_INIT(
 AC_CONFIG_SRCDIR([source])
 AC_LANG([C++])
 
-CXX=/opt/gcw0-toolchain/usr/bin/mipsel-gcw0-linux-uclibc-g++
+CXX=/opt/gcw0-toolchain/usr/bin/mipsel-linux-g++
 
 
 
@@ -124,7 +124,7 @@ dnl ========
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 
-CXXFLAGS+=" -O3 -mips32r2 -fomit-frame-pointer -fno-builtin -fdata-sections -fno-common -fno-PIC -ffast-math -g"
+CXXFLAGS+=" -O3 -mips32r2 -fomit-frame-pointer -fno-builtin -fdata-sections -fno-common -fno-PIC -ffast-math -g -DDINGUX"
 LDFLAGS+=" -flto"
 
 dnl ============================

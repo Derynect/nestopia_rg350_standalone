@@ -215,6 +215,12 @@ void config_set_default() {
 	conf.misc_homebrew_exit = -1;
 	conf.misc_homebrew_stdout = -1;
 	conf.misc_homebrew_stderr = -1;
+
+#ifdef DINGUX
+    conf.video_scale_factor = 1;
+	conf.video_palette_mode = 1;
+	conf.audio_sample_rate = 32000;
+#endif
 }
 
 static int config_match(void* user, const char* section, const char* name, const char* value) {

@@ -82,13 +82,6 @@ void nstsdl_video_set_cursor() {
 void nstsdl_video_set_title(const char *title) {
 }
 
-uint32_t getUs()
-{
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
-}
-
 uint32_t lastNs = 0;
 void nstsdl_video_swapbuffers() {
     SDL_Flip(screen);

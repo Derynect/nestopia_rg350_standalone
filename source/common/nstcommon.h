@@ -106,4 +106,15 @@ void nst_unload();
 void nst_play();
 void nst_pause();
 
+#include <time.h>
+#include <stdint.h>
+inline uint32_t getUs()
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+}
+
+
+
 #endif

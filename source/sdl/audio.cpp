@@ -38,19 +38,7 @@ static int framerate, channels, bufsize;
 
 static bool paused = false;
 
-void (*audio_output)();
 void (*audio_deinit)();
-
-void audio_output_sdl() {
-#if 0
-	while (SDL_GetQueuedAudioSize(dev) > (Uint32)bufsize) {
-		if (conf.timing_limiter) { SDL_Delay(1); }
-	}
-	SDL_QueueAudio(dev, (const void*)audiobuf, bufsize);
-	// Clear the audio queue arbitrarily to avoid it backing up too far
-	if (SDL_GetQueuedAudioSize(dev) > (Uint32)(bufsize * 3)) { SDL_ClearQueuedAudio(dev); }
-#endif
-}
 
 void KillSound(void) {
     SDL_CloseAudio();
@@ -64,20 +52,22 @@ void audio_deinit_sdl() {
 void audio_play() {
 	if (paused) { return; }
 	bufsize = 2 * channels * (conf.audio_sample_rate / framerate);
-	audio_output();
 }
 
 void audio_cb_sdl(void *data, uint8_t *stream, int len) {
 	uint8_t *soundbuf = (uint8_t*)audiobuf;
 	
+	memcpy(stream, soundbuf, len);
+#if 0
 	for (int i = 0; i < len; i++) {
 		stream[i] = soundbuf[i];
 	}
+#endif
 }
 
 void audio_init_sdl() {
 	spec.freq = conf.audio_sample_rate;
-	spec.format = AUDIO_S16SYS;
+	spec.format = AUDIO_S16;
 	spec.channels = channels;
 	spec.silence = 0;
 	spec.samples = (conf.audio_sample_rate / framerate);
@@ -98,7 +88,6 @@ void audio_init_sdl() {
 }
 
 void audio_set_funcs() {
-    audio_output = &audio_output_sdl;
     audio_deinit = &audio_deinit_sdl;
 }
 

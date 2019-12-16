@@ -47,15 +47,6 @@ void nst_schedule_quit() {
 	nst_quit = 1;
 }
 
-#include <time.h>
-uint32_t getUs2()
-{
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
-}
-
-
 int main(int argc, char *argv[]) {
 	// This is the main function
 	
@@ -145,10 +136,14 @@ int main(int argc, char *argv[]) {
 			}	
 		}
 		
-		uint32_t t0 = getUs2();
+#if 0
+		uint32_t t0 = getUs();
+#endif
 		nst_emuloop();
-		uint32_t t1 = getUs2();
+#if 0
+		uint32_t t1 = getUs();
 		printf("emu loop %u\n", t1-t0);
+#endif
 	}
 	
 	// Remove the cartridge and shut down the NES
