@@ -30,7 +30,7 @@
 
 extern Emulator emulator;
 
-static SDL_AudioSpec spec, obtained;
+static SDL_AudioSpec spec;
 
 static int16_t audiobuf[6400];
 
@@ -57,7 +57,12 @@ void audio_play() {
 void audio_cb_sdl(void *data, uint8_t *stream, int len) {
 	uint8_t *soundbuf = (uint8_t*)audiobuf;
 	
-	memcpy(stream, soundbuf, len);
+//	printf("audio len %d bufsize %d\n", len, bufsize);
+	if (bufsize > 0)
+    {
+        memcpy(stream, audiobuf, bufsize > len ? len : bufsize);
+        bufsize = 0;
+    }
 #if 0
 	for (int i = 0; i < len; i++) {
 		stream[i] = soundbuf[i];
@@ -67,13 +72,14 @@ void audio_cb_sdl(void *data, uint8_t *stream, int len) {
 
 void audio_init_sdl() {
 	spec.freq = conf.audio_sample_rate;
-	spec.format = AUDIO_S16;
+	spec.format = AUDIO_S16SYS;
 	spec.channels = channels;
 	spec.silence = 0;
 	spec.samples = (conf.audio_sample_rate / framerate);
 	spec.userdata = 0;
-	//spec.callback = NULL; // Use SDL_QueueAudio instead
 	spec.callback = audio_cb_sdl;
+
+	printf("spec.samples %d\n", (int)spec.samples);
 
 	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
 	    printf("Error initing audio\n");
