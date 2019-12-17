@@ -39,9 +39,9 @@ extern nstpaths_t nstpaths;
 extern Emulator emulator;
 
 SDL_Surface *screen = NULL;
+static Uint32 flags = SDL_SWSURFACE | SDL_TRIPLEBUF | SDL_ASYNCBLIT;
 
 void nstsdl_video_create() {
-    Uint32 flags = SDL_HWSURFACE | SDL_TRIPLEBUF;
 
     screen = SDL_SetVideoMode(320, 240, 16, flags);
 
@@ -49,6 +49,8 @@ void nstsdl_video_create() {
         fprintf(stderr, "Error creating screen: %s\n", SDL_GetError());
         exit(1);
     }
+
+    SDL_ShowCursor(false);
 }
 
 void nstsdl_video_destroy() {
@@ -60,23 +62,14 @@ dimensions_t nstsdl_video_get_dimensions() {
     scrsize.w = 320;
     scrsize.h = 240;
     return scrsize;
-//	// Return the dimensions of the current screen
-//	dimensions_t scrsize;
-//	SDL_DisplayMode displaymode;
-//	int displayindex = SDL_GetWindowDisplayIndex(sdlwindow);
-//	SDL_GetDesktopDisplayMode(displayindex, &displaymode);
-//	scrsize.w = displaymode.w;
-//	scrsize.h = displaymode.h;
-//	return scrsize;
 }
 
 void nstsdl_video_resize() {
-//	dimensions_t rendersize = nst_video_get_dimensions_render();
-//	SDL_SetWindowSize(sdlwindow, rendersize.w, rendersize.h);
+	dimensions_t rendersize = nst_video_get_dimensions_render();
+    SDL_SetVideoMode(320, 240, 16, flags);
 }
 
 void nstsdl_video_set_cursor() {
-    SDL_ShowCursor(0);
 }
 
 void nstsdl_video_set_title(const char *title) {
@@ -84,7 +77,7 @@ void nstsdl_video_set_title(const char *title) {
 
 uint32_t lastNs = 0;
 void nstsdl_video_swapbuffers() {
-    SDL_Flip(screen);
+    //SDL_Flip(screen);
 #if 0
     uint32_t curNs = getUs();
     if (lastNs != 0)
@@ -97,15 +90,15 @@ void nstsdl_video_toggle_fullscreen() {
 }
 
 void nstsdl_video_toggle_filter() {
-//	video_toggle_filter();
-//	nst_video_set_dimensions_screen(nstsdl_video_get_dimensions());
-//	video_init();
-//	nstsdl_video_resize();
+	video_toggle_filter();
+	nst_video_set_dimensions_screen(nstsdl_video_get_dimensions());
+	video_init();
+	nstsdl_video_resize();
 }
 
 void nstsdl_video_toggle_scale() {
-//	video_toggle_scalefactor();
-//	nst_video_set_dimensions_screen(nstsdl_video_get_dimensions());
-//	video_init();
-//	nstsdl_video_resize();
+	video_toggle_scalefactor();
+	nst_video_set_dimensions_screen(nstsdl_video_get_dimensions());
+	video_init();
+	nstsdl_video_resize();
 }

@@ -1,14 +1,16 @@
 #!/bin/sh
 
-OPK_NAME=nestopia.opk
+VERSION=$(git log --pretty=format:'%h' -n 1)
+OPK_NAME=nestopia-$VERSION.opk
 
 echo nestopia
+
 
 # create default.gcw0.desktop
 cat > default.gcw0.desktop <<EOF
 [Desktop Entry]
 Name=nestopia
-Comment=Nestopia 1.50-WIP
+Comment=Nestopia 1.50-WIP $VERSION
 Exec=nestopia %f
 Terminal=false
 Type=Application

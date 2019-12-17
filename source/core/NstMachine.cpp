@@ -23,6 +23,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////////////
 
+#include <stdio.h>
 #include "NstMachine.hpp"
 #include "NstCartridge.hpp"
 #include "NstCheats.hpp"
@@ -34,6 +35,7 @@
 #include "input/NstInpPad.hpp"
 #include "api/NstApiMachine.hpp"
 #include "api/NstApiUser.hpp"
+#include "source/common/nstcommon.h"
 
 namespace Nes
 {
@@ -503,10 +505,17 @@ namespace Nes
 			Input::Controllers* const input
 		)
 		{
+#ifdef PERF
+		    uint32_t t[16];
+		    int o = -1;
+#endif
 			NST_ASSERT( state & Api::Machine::ON );
 
 			if (!(state & Api::Machine::SOUND))
 			{
+#ifdef PERF
+			    t[++o] = getUs();
+#endif
 				if (state & Api::Machine::CARTRIDGE)
 					static_cast<Cartridge*>(image)->BeginFrame( Api::Input(*this), input );
 
@@ -518,19 +527,31 @@ namespace Nes
 				if (cheats)
 					cheats->BeginFrame( tracker.IsFrameLocked() );
 
+#ifdef PERF
+			    t[++o] = getUs();
+#endif
 				cpu.ExecuteFrame( sound );
 				ppu.EndFrame();
+#ifdef PERF
+			    t[++o] = getUs();
+#endif
 
 				renderer.bgColor = ppu.output.bgColor;
 
 				if (video)
 					renderer.Blit( *video, ppu.GetScreen(), ppu.GetBurstPhase() );
 
+#ifdef PERF
+			    t[++o] = getUs();
+#endif
 				cpu.EndFrame();
 
 				if (image)
 					image->VSync();
 
+#ifdef PERF
+			    t[++o] = getUs();
+#endif
 				extPort->EndFrame();
 				expPort->EndFrame();
 
@@ -545,6 +566,12 @@ namespace Nes
 
 				image->VSync();
 			}
+#ifdef PERF
+			t[++o] = getUs();
+			for (int i = 0; i < o; i++)
+			    printf("%d %-8u ", i, t[i+1] - t[i]);
+			printf("\n");
+#endif
 		}
 
 		NES_POKE_D(Machine,4016)

@@ -120,8 +120,10 @@ int main(int argc, char *argv[]) {
 	// Start the main loop
 	SDL_Event event;
 	while (!nst_quit) {
+		//uint32_t t0 = getUs();
 		nst_ogl_render();
-		nstsdl_video_swapbuffers();
+		//uint32_t t1 = getUs();
+		//nstsdl_video_swapbuffers();
 		
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
@@ -135,15 +137,11 @@ int main(int argc, char *argv[]) {
 				default: break;
 			}	
 		}
+		//uint32_t t2 = getUs();
 		
-#if 0
-		uint32_t t0 = getUs();
-#endif
 		nst_emuloop();
-#if 0
-		uint32_t t1 = getUs();
-		printf("emu loop %u\n", t1-t0);
-#endif
+		//uint32_t t3 = getUs();
+		//printf("emu loop ogl_render %-10u poll %-10u emuloop %-10u total %-10u\n", t1-t0, t2-t1, t3-t2, t3-t0);
 	}
 	
 	// Remove the cartridge and shut down the NES

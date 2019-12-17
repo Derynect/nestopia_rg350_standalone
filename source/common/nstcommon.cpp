@@ -740,11 +740,13 @@ int nst_timing_runframes() {
 void nst_timing_set_ffspeed() {
 	// Set the framerate to the fast-forward speed
 	ffspeed = true;
+	audio_pause();
 }
 
 void nst_timing_set_default() {
 	// Set the framerate to the default
 	ffspeed = false;
+	audio_unpause();
 }
 
 void nst_reset(bool hardreset) {

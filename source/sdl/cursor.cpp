@@ -106,8 +106,8 @@ static SDL_Cursor *cursor_init(const char *image[]) {
 
 void cursor_set_special(int type) {
 	// Set special cursors
-	cursor = cursor_init(crosshair);
-	SDL_SetCursor(cursor);
+	//cursor = cursor_init(crosshair);
+	//SDL_SetCursor(cursor);
 }
 
 void cursor_set_default() {

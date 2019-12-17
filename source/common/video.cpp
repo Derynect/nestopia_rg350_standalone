@@ -40,14 +40,8 @@
 
 using namespace Nes::Api;
 
+static uint32_t videobuf[320*240*4];
 static int overscan_offset, overscan_height;
-
-#undef VID
-#ifndef VID
-static uint32_t videobuf[VIDBUF_MAXSIZE]; // Maximum possible internal size
-#else
-uint32_t* videobuf;
-#endif
 
 static Video::RenderState::Filter filter;
 static Video::RenderState renderstate;
@@ -75,15 +69,15 @@ void nst_ogl_init() {
     gmask = 0x0000ff00;
     rmask = 0x00ff0000;
 
-#ifdef VID
-    videobuf = (uint32_t*)(screen->pixels;
-#else
-	nes_screen = SDL_CreateRGBSurfaceFrom(videobuf, 256, 224, 32, 256*4, rmask, gmask, bmask, amask);
-	if(!nes_screen)
-		printf("Error in SDL_CreateRGBSurfaceFrom: %s\n", SDL_GetError());
-#endif
+    printf("basesize_w %d h %d rendersize_w %d h %d\n", basesize.w, basesize.h, rendersize.w, rendersize.h);
+    //nes_screen = SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 240, 32, rmask, gmask, bmask, amask);
 
-//	SDL_SetPalette(nes_screen, SDL_LOGPAL, (SDL_Color *)s_cpsdl, 0, 256);
+	nes_screen = SDL_CreateRGBSurfaceFrom(videobuf, basesize.w, basesize.h, 32, basesize.w*4, rmask, gmask, bmask, amask);
+	if(!nes_screen)
+    {
+		printf("Error in SDL_CreateRGBSurfaceFrom: %s\n", SDL_GetError());
+		exit(0);
+    }
 }
 
 void nst_ogl_deinit() {
@@ -95,38 +89,27 @@ void nst_ogl_deinit() {
 
 
 void nst_ogl_render() {
-#ifndef VID
+    SDL_Rect srcrect;
+    srcrect.w = 256;
+    srcrect.h = 224;
+    srcrect.x = 0;
+    srcrect.y = (screen->h - rendersize.h) / 2;
+
     SDL_Rect dstrect;
+    dstrect.w = 256;
+    dstrect.h = 224;
+    dstrect.x = (screen->w - rendersize.w) / 2;
+    dstrect.y = (screen->h - rendersize.h) / 2;
 
-    dstrect.x = (screen->w - 256) / 2;
-    dstrect.y = (screen->h - 224) / 2;
-
-#if 0
-    uint32_t t0 = getUs();
-#endif
-    SDL_BlitSurface(nes_screen, 0, screen, &dstrect);
-#if 0
-    uint32_t t1 = getUs();
-    printf("blit %u\n", t1-t0);
-#endif
-#endif
+    SDL_BlitSurface(nes_screen, &srcrect, screen, &dstrect);
+    SDL_Flip(screen);
 }
-
-long video_lock_screen(void*& ptr) {
-	if (SDL_MUSTLOCK(screen)) SDL_LockSurface(screen);
-	ptr = videobuf;
-	return basesize.w * 4;
-}
-
-void video_unlock_screen(void*) {
-	if (SDL_MUSTLOCK(screen)) SDL_UnlockSurface(screen);
-}
-
 
 void nst_video_refresh() {
 	// Refresh the video settings
 	
 	nst_ogl_deinit();
+	
 	nst_ogl_init();
 }
 
@@ -446,6 +429,26 @@ void video_set_dimensions() {
 	}
 }
 
+long video_lock_screen(void*& ptr) {
+	ptr = nes_screen->pixels;
+	return basesize.w * 4;
+}
+
+void video_unlock_screen(void*) {
+	
+	int xscale = renderstate.width / Video::Output::WIDTH;;
+	int yscale = renderstate.height / Video::Output::HEIGHT;
+	
+	if (osdtext.drawtext) {
+		nst_video_text_draw(osdtext.textbuf, osdtext.xpos * xscale, osdtext.ypos * yscale, osdtext.bg);
+		osdtext.drawtext--;
+	}
+	
+	if (osdtext.drawtime) {
+		nst_video_text_draw(osdtext.timebuf, 208 * xscale, 218 * yscale, false);
+	}
+}
+
 void video_screenshot_flip(unsigned char *pixels, int width, int height, int bytes) {
 	// Flip the pixels
 	int rowsize = width * bytes;
@@ -466,7 +469,7 @@ void video_screenshot(const char* filename) {
 
 void video_clear_buffer() {
 	// Write black to the video buffer
-	memset(videobuf, 0x00000000, VIDBUF_MAXSIZE);
+	//memset(videobuf, 0x00000000, VIDBUF_MAXSIZE);
 }
 
 void video_disp_nsf() {
