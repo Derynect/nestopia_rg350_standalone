@@ -60,7 +60,7 @@ AS_IF([test "x${enable_flags_setting}" = "xyes" && test "x${enable_debug}" = "xn
 	AX_APPEND_COMPILE_FLAGS([${cppflags_test}], [CPPFLAGS])
 	CPPFLAGS=$( echo ${CPPFLAGS} | $SED -e 's/^ *//' -e 's/ *$//' )
 	
-	AX_APPEND_LINK_FLAGS([${ldflags_test} -flto], [LDFLAGS])
+	AX_APPEND_LINK_FLAGS([${ldflags_test} -flto -lrt -lz --gc-sections -s], [LDFLAGS])
 	LDFLAGS=$( echo ${LDFLAGS} | $SED -e 's/^ *//' -e 's/ *$//' )
 	]
 )

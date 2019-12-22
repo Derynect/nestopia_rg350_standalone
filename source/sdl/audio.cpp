@@ -53,7 +53,6 @@ void audio_deinit_sdl() {
     KillSound();
 }
 
-#undef FFF
 void audio_play() {
 	if (paused) { return; }
 
@@ -63,15 +62,6 @@ void audio_play() {
     {
         outbuf[woffset++ % OUTBUFSZ] = inbuf[i++];
     }
-
-#ifdef FFF
-    printf("audio_play   woffset %d roffset %d spec.samples %d outbufsize %d wrote %d %s\n",
-            woffset, roffset, spec.samples, (int)sizeof(outbuf), i,
-            i < spec.samples ? "UNDERRUN" : "");
-
-    if (i < spec.samples)
-        printf("!!! overrun\n");
-#endif
 }
 
 void audio_cb_sdl(void *data, uint8_t *stream, int len) {
@@ -87,10 +77,6 @@ void audio_cb_sdl(void *data, uint8_t *stream, int len) {
         else
             ptr[i] = 0;
     }
-#ifdef FFF
-    printf("audio_cb_sdl woffset %d roffset %d spec.samples %d outbufsize %d len %d writecount %d\n",
-            woffset, roffset, spec.samples, OUTBUFSZ, len, writecount);
-#endif
 
     return;
     /*
@@ -158,8 +144,10 @@ void audio_init_sdl() {
 
     conf.audio_stereo = 1;
     inbuf = (int16_t*)malloc(sizeof(int16_t) * spec.samples * 2);
+#if 0
 	printf("spec.samples %d conf.audio_sample_rate %d framerate %d outbufsize %d stereo %d pal %d\n",
 	        (int)spec.samples, conf.audio_sample_rate, framerate, (int)sizeof(outbuf), conf.audio_stereo, nst_pal());
+#endif
 
 	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
 	    printf("Error initing audio\n");

@@ -43,6 +43,7 @@ void video_set_filter();
 dimensions_t nst_video_get_dimensions_render();
 dimensions_t nst_video_get_dimensions_screen();
 void nst_video_set_dimensions_screen(dimensions_t scrsize);
+void nst_video_refresh();
 void video_set_dimensions();
 
 long video_lock_screen(void*& ptr);

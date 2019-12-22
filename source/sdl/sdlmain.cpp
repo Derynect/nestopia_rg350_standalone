@@ -107,13 +107,9 @@ int main(int argc, char *argv[]) {
 		else {
 			// Create the window
 			nstsdl_video_create();
-			nstsdl_video_set_title(nstpaths.gamename);
 			
 			// Set play in motion
 			nst_play();
-			
-			// Set the cursor if needed
-			nstsdl_video_set_cursor();
 		}
 	}
 
@@ -123,7 +119,6 @@ int main(int argc, char *argv[]) {
 		//uint32_t t0 = getUs();
 		nst_ogl_render();
 		//uint32_t t1 = getUs();
-		//nstsdl_video_swapbuffers();
 		
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {

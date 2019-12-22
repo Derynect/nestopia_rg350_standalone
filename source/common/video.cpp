@@ -35,12 +35,15 @@
 #include "config.h"
 #include "font.h"
 #include "png.h"
+#include "scaler.h"
 
 #include <SDL/SDL_video.h>
+#include <SDL/SDL_rotozoom.h>
 
 using namespace Nes::Api;
 
 static uint32_t videobuf[320*240*4];
+static uint32_t scaled_buf[320*240*4];
 static int overscan_offset, overscan_height;
 
 static Video::RenderState::Filter filter;
@@ -56,27 +59,32 @@ extern Emulator emulator;
 
 extern SDL_Surface* screen;
 SDL_Surface* nes_screen = NULL; // 256x224
+SDL_Surface* scaled_screen = NULL; // 256x224
 
 
 void nst_ogl_init() {
     uint32_t amask = 0x00000000;
-    uint32_t bmask = 0x0000ff00;
-    uint32_t gmask = 0x00ff0000;
-    uint32_t rmask = 0xff000000;
+    uint32_t bmask = 0x000000ff;
+    uint32_t gmask = 0x0000ff00;
+    uint32_t rmask = 0x00ff0000;
 
-    amask = 0x00000000;
-    bmask = 0x000000ff;
-    gmask = 0x0000ff00;
-    rmask = 0x00ff0000;
+#if 0
+    printf("basesize_w %d h %d rendersize_w %d h %d fullscreen %d\n",
+            basesize.w, basesize.h, rendersize.w, rendersize.h, conf.video_fullscreen);
+#endif
 
-    printf("basesize_w %d h %d rendersize_w %d h %d\n", basesize.w, basesize.h, rendersize.w, rendersize.h);
-    //nes_screen = SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 240, 32, rmask, gmask, bmask, amask);
-
-	nes_screen = SDL_CreateRGBSurfaceFrom(videobuf, basesize.w, basesize.h, 32, basesize.w*4, rmask, gmask, bmask, amask);
-	if(!nes_screen)
-    {
-		printf("Error in SDL_CreateRGBSurfaceFrom: %s\n", SDL_GetError());
+	nes_screen = SDL_CreateRGBSurfaceFrom(videobuf, 256, 240, 32, 256*4, rmask, gmask, bmask, amask);
+	if (!nes_screen) {
+		printf("Error creating surface: %s\n", SDL_GetError());
 		exit(0);
+    }
+
+    if (conf.video_fullscreen) {
+        scaled_screen = SDL_CreateRGBSurfaceFrom(scaled_buf, 320, 240, 32, 320*4, rmask, gmask, bmask, amask);
+        if (!scaled_screen) {
+            printf("Error creating scaled surface: %s\n", SDL_GetError());
+            exit(0);
+        }
     }
 }
 
@@ -85,32 +93,43 @@ void nst_ogl_deinit() {
         SDL_FreeSurface(nes_screen);
         nes_screen = NULL;
     }
+    if (scaled_screen) {
+        SDL_FreeSurface(scaled_screen);
+        scaled_screen = NULL;
+    }
 }
 
-
 void nst_ogl_render() {
-    SDL_Rect srcrect;
-    srcrect.w = 256;
-    srcrect.h = 224;
-    srcrect.x = 0;
-    srcrect.y = (screen->h - rendersize.h) / 2;
+    if (conf.video_fullscreen) {
+        upscale_320x240((uint32_t*)scaled_screen->pixels , ((uint32_t*)nes_screen->pixels) + overscan_offset);
+        SDL_BlitSurface(scaled_screen, 0, screen, 0);
+    }
+    else {
+        SDL_Rect sr;
+        sr.w = 256;
+        sr.h = 224;
+        sr.x = 0;
+        sr.y = (screen->h - rendersize.h) / 2;
 
-    SDL_Rect dstrect;
-    dstrect.w = 256;
-    dstrect.h = 224;
-    dstrect.x = (screen->w - rendersize.w) / 2;
-    dstrect.y = (screen->h - rendersize.h) / 2;
+        SDL_Rect dr;
+        dr.w = 256;
+        dr.h = 224;
+        dr.x = (screen->w - rendersize.w) / 2;
+        dr.y = sr.y;
 
-    SDL_BlitSurface(nes_screen, &srcrect, screen, &dstrect);
+        SDL_BlitSurface(nes_screen, &sr, screen, &dr);
+    }
+
     SDL_Flip(screen);
 }
 
 void nst_video_refresh() {
 	// Refresh the video settings
-	
+
 	nst_ogl_deinit();
 	
 	nst_ogl_init();
+	video_clear_buffer();
 }
 
 void video_init() {
@@ -123,7 +142,10 @@ void video_init() {
 	
 	nst_ogl_init();
 	
-	if (nst_nsf()) { video_clear_buffer(); video_disp_nsf(); }
+    video_clear_buffer();
+	if (nst_nsf()) {
+	    video_disp_nsf();
+	}
 }
 
 void video_toggle_fullscreen() {
@@ -365,68 +387,31 @@ void nst_video_set_dimensions_screen(dimensions_t scrsize) {
 
 void video_set_dimensions() {
 	// Set up the video dimensions
-	int scalefactor = conf.video_scale_factor;
-	if (conf.video_scale_factor > 4) { scalefactor = 4; }
-	if ((conf.video_scale_factor > 3) && (conf.video_filter == 5)) { scalefactor = 3; }
-	int wscalefactor = conf.video_scale_factor;
-	int tvwidth = nst_pal() ? PAL_TV_WIDTH : TV_WIDTH;
+
+    basesize.w = Video::Output::WIDTH;
+    basesize.h = Video::Output::HEIGHT;
+    rendersize.h = basesize.h;
+    rendersize.w = basesize.w;
+    overscan_offset = basesize.w * OVERSCAN_TOP;
+    overscan_height = basesize.h - OVERSCAN_TOP - OVERSCAN_BOTTOM;
 	
-	switch(conf.video_filter) {
-		case 0:	// None
-			basesize.w = Video::Output::WIDTH;
-			basesize.h = Video::Output::HEIGHT;
-			conf.video_tv_aspect == true ? rendersize.w = tvwidth * wscalefactor : rendersize.w = basesize.w * wscalefactor;
-			rendersize.h = basesize.h * wscalefactor;
-			overscan_offset = basesize.w * OVERSCAN_TOP;
-			overscan_height = basesize.h - OVERSCAN_TOP - OVERSCAN_BOTTOM;
-			break;
-
-		case 1: // NTSC
-			basesize.w = Video::Output::NTSC_WIDTH;
-			rendersize.w = (basesize.w / 2) * wscalefactor;
-			basesize.h = Video::Output::HEIGHT;
-			rendersize.h = basesize.h * wscalefactor;
-			overscan_offset = basesize.w * OVERSCAN_TOP;
-			overscan_height = basesize.h - OVERSCAN_TOP - OVERSCAN_BOTTOM;
-			break;
-
-		case 2: // xBR
-		case 3: // HqX
-		case 5: // ScaleX
-			basesize.w = Video::Output::WIDTH * scalefactor;
-			basesize.h = Video::Output::HEIGHT * scalefactor;
-			conf.video_tv_aspect == true ? rendersize.w = tvwidth * wscalefactor : rendersize.w = Video::Output::WIDTH * wscalefactor;;
-			rendersize.h = Video::Output::HEIGHT * wscalefactor;
-			overscan_offset = basesize.w * OVERSCAN_TOP * scalefactor;
-			overscan_height = basesize.h - (OVERSCAN_TOP + OVERSCAN_BOTTOM) * scalefactor;
-			break;
-		
-		case 4: // 2xSaI
-			basesize.w = Video::Output::WIDTH * 2;
-			basesize.h = Video::Output::HEIGHT * 2;
-			conf.video_tv_aspect == true ? rendersize.w = tvwidth * wscalefactor : rendersize.w = Video::Output::WIDTH * wscalefactor;
-			rendersize.h = Video::Output::HEIGHT * wscalefactor;
-			overscan_offset = basesize.w * OVERSCAN_TOP * 2;
-			overscan_height = basesize.h - (OVERSCAN_TOP + OVERSCAN_BOTTOM) * 2;
-			break;
-	}
-
 	if (!conf.video_unmask_overscan) {
-		rendersize.h -= (OVERSCAN_TOP + OVERSCAN_BOTTOM) * scalefactor;
+		rendersize.h -= (OVERSCAN_TOP + OVERSCAN_BOTTOM);
 	}
-	else { overscan_offset = 0; overscan_height = basesize.h; }
-	
-	// Calculate the aspect from the height because it's smaller
-	float aspect = (float)screensize.h / (float)rendersize.h;
-	
-	if (!conf.video_stretch_aspect && conf.video_fullscreen) {
-		rendersize.h *= aspect;
-		rendersize.w *= aspect;
+	else {
+	    overscan_offset = 0;
+	    overscan_height = basesize.h;
 	}
-	else if (conf.video_fullscreen) {
+	
+	if (conf.video_fullscreen) {
 		rendersize.h = screensize.h;
 		rendersize.w = screensize.w;
 	}
+
+#if 0
+    printf("XXX basesize %d %d rendersize %d %d fullscreen %d\n",
+            basesize.w, basesize.h, rendersize.w, rendersize.h, conf.video_fullscreen);
+#endif
 }
 
 long video_lock_screen(void*& ptr) {
@@ -435,7 +420,6 @@ long video_lock_screen(void*& ptr) {
 }
 
 void video_unlock_screen(void*) {
-	
 	int xscale = renderstate.width / Video::Output::WIDTH;;
 	int yscale = renderstate.height / Video::Output::HEIGHT;
 	
@@ -468,8 +452,12 @@ void video_screenshot(const char* filename) {
 }
 
 void video_clear_buffer() {
-	// Write black to the video buffer
-	//memset(videobuf, 0x00000000, VIDBUF_MAXSIZE);
+	SDL_FillRect(screen, 0, 0);
+	SDL_Flip(screen);
+	SDL_FillRect(screen, 0, 0);
+	SDL_Flip(screen);
+	SDL_FillRect(screen, 0, 0);
+	SDL_Flip(screen);
 }
 
 void video_disp_nsf() {

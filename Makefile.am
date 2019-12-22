@@ -720,6 +720,8 @@ nestopia_SOURCES += \
 	source/common/config.cpp \
 	source/common/config.h \
 	source/common/video.cpp \
+	source/common/scaler.h \
+	source/common/scaler.cpp \
 	source/common/video.h \
 	source/common/input.cpp \
 	source/common/input.h \

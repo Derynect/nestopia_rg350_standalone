@@ -166,6 +166,10 @@ void nstsdl_input_match_keyboard(Input::Controllers *controllers, SDL_Event even
 	if (event.key.keysym.sym == DINGOO_L && event.type == SDL_KEYUP) {
 	    nst_timing_set_default();
     }
+	if (event.key.keysym.sym == DINGOO_R2 && event.type == SDL_KEYDOWN) {
+	    video_toggle_fullscreen();
+	    video_init();
+    }
 }
 
 void nstsdl_input_match_mouse(Input::Controllers *controllers, SDL_Event event) {

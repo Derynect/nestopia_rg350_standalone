@@ -42,7 +42,6 @@ SDL_Surface *screen = NULL;
 static Uint32 flags = SDL_SWSURFACE | SDL_TRIPLEBUF | SDL_ASYNCBLIT;
 
 void nstsdl_video_create() {
-
     screen = SDL_SetVideoMode(320, 240, 16, flags);
 
     if (!screen) {
@@ -57,48 +56,3 @@ void nstsdl_video_destroy() {
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
-dimensions_t nstsdl_video_get_dimensions() {
-    dimensions_t scrsize;
-    scrsize.w = 320;
-    scrsize.h = 240;
-    return scrsize;
-}
-
-void nstsdl_video_resize() {
-	dimensions_t rendersize = nst_video_get_dimensions_render();
-    SDL_SetVideoMode(320, 240, 16, flags);
-}
-
-void nstsdl_video_set_cursor() {
-}
-
-void nstsdl_video_set_title(const char *title) {
-}
-
-uint32_t lastNs = 0;
-void nstsdl_video_swapbuffers() {
-    //SDL_Flip(screen);
-#if 0
-    uint32_t curNs = getUs();
-    if (lastNs != 0)
-        printf("%u\n", abs(curNs - lastNs));
-    lastNs = curNs;
-#endif
-}
-
-void nstsdl_video_toggle_fullscreen() {
-}
-
-void nstsdl_video_toggle_filter() {
-	video_toggle_filter();
-	nst_video_set_dimensions_screen(nstsdl_video_get_dimensions());
-	video_init();
-	nstsdl_video_resize();
-}
-
-void nstsdl_video_toggle_scale() {
-	video_toggle_scalefactor();
-	nst_video_set_dimensions_screen(nstsdl_video_get_dimensions());
-	video_init();
-	nstsdl_video_resize();
-}
