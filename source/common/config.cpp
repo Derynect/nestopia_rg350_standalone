@@ -218,7 +218,6 @@ void config_set_default() {
 
 #ifdef DINGUX
     conf.video_scale_factor = 1;
-	conf.video_palette_mode = 1;
 	conf.audio_sample_rate = 44100;
 	conf.misc_disable_cursor = true;
 #endif
